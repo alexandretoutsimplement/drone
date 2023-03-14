@@ -1,33 +1,41 @@
 from tkinter import *
 import cv2
+import threading
 import socket
 import pickle
 import struct
+import time
 
-COMMAND_IP = "192.168.10.1"
-COMMAND_PORT =  8889
+class Treadvideo (threading.Thread):
+	def __init__(self, zonecam):
+		threading.Thread.__init__(self)
+		self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.server_socket.bind(("127.0.0.1", 11111))
+		self.server_socket.listen()
+		self.zonecam=zonecam
 
-VIDEO_IP = "127.0.0.1"
-VIDEO_PORT = 11111
+	
+	
+	def run (self):
+		self.continuer = True
+		while self.continuer:
+			drone_socket, addr = self.server_socket.accept()
+			print('Connecter depuis', addr)
+		
+			if drone_socket:
+				vid = cv2.VideoCapture(0)
+				while(vid.isOpened()):
+					img,frame = vid.read()
+					a = pickle.dumps(frame)
+					message = struct.pack("Q",len(a))+a
+					drone_socket.sendall(message)
+					cv2.imshow(self.zonecam,frame)
+			time.sleep(0.01)
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	
 
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+ACCES_DRONE = ('192.168.10.1', 8889)
 
-sock.bind((VIDEO_IP, VIDEO_PORT))
-
-
-message = "command".encode()
-client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
-
-message = "streamon".encode()
-client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
-
-message = "setbitrate bitrate 3".encode()
-client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
-
-message = "setresolution resoltion low".encode()
-client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
 
 def getresp(label):
 	client_socket.timeout(1)
@@ -36,40 +44,50 @@ def getresp(label):
 		message, address=client_socket.recvfrom(1024)
 	except:
 		message= "Problème de connexion"
-	label.config(text=message)	
+	label.config(text=message)
+	
 def decoller():
 	message = "takeoff".encode()
-	client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
+	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 def atterir():
 	message = "land".encode()
-	client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
+	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 def droite():
 	message = "right 20".encode()
-	client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
+	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 def gauche():
 	message = "left 20".encode()
-	client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
-	getresp(label)	
-def avancer():
-	message = "forward 20".encode()
-	client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
-	getresp(label)
-def reculer():
-	message = "back 20".encode()
-	client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
-	getresp(label)
-def pivdroite():
-	message = "cw 20".encode()
-	client_socket.sendto(message, (COMMAND_IP, COMMAND_PORT))
-	getresp(label)
-def pivgauche():
-	message = "ccw 20".encode()
-	client_socket.sendto(message, (COMMAND_IP,COMMAND_PORT))
+	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 	
+def avancer():
+	message = "forward 20".encode()
+	client_socket.sendto(message, ACCES_DRONE)
+	getresp(label)
+
+def reculer():
+	message = "back 20".encode()
+	client_socket.sendto(message, ACCES_DRONE)
+	getresp(label)
+	
+def pivdroite():
+	message = "cw 20".encode()
+	client_socket.sendto(message, ACCES_DRONE)
+	getresp(label)
+
+def pivgauche():
+	message = "ccw 20".encode()
+	client_socket.sendto(message, ACCES_DRONE)
+	getresp(label)
+
+def fermeture():
+	client_socket.close()
+	tv.server_socket.close()
+	tv.contiuer = False
+	window.destroy()
 
 window=Tk()
 
@@ -115,6 +133,8 @@ button_7.place(x=col4, y=ligne2)
 button_8 = Button(window, text="Pivdroite", command=pivdroite)
 button_8.place(x=col6, y=ligne2)
 
+button_quit = Button(window, text="Quitter", command=fermeture)
+
 zonecam = Canvas(window, width="480", height="480", background= "black")
 zonecam.place(x=0, y=600)
 
@@ -124,22 +144,22 @@ zonemap.place(x=1440, y=600)
 
 window.mainloop()
 
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+message = "command".encode()
+client_socket.sendto(message, ACCES_DRONE)
+
+message = "streamon".encode()
+client_socket.sendto(message, ACCES_DRONE)
+
+message = "setbitrate bitrate 3".encode()
+client_socket.sendto(message, ACCES_DRONE)
+
+message = "setresolution resoltion low".encode()
+client_socket.sendto(message, ACCES_DRONE)
+
+tv = Treadvideo(zonecam)
+tv.start()
+
 getresp(label)
 
-sock.listen()
-
-
-while True:
-	drone_socket, addr = server_socket.accept()
-	print('Connecter depuis', addr)
-	if drone_socket:
-		vid = cv2.VideoCapture(0)
-		while(vid.isOpened()):
-			img,frame = vid.read()
-			a = pickle.dumps(frame)
-			message = struct.pack("Q",len(a))+a
-			drone_socket.sendall(message)
-			cv2.imshow(zoncam,frame)
-
-
-client_socket.close()
