@@ -35,51 +35,60 @@ class Treadvideo (threading.Thread):
 	
 
 ACCES_DRONE = ('192.168.10.1', 8889)
-
+nombre=30
 
 def getresp(label):
-	client_socket.timeout(1)
-
+	print("getresp")
 	try: 
+		client_socket.timeout(1)
 		message, address=client_socket.recvfrom(1024)
 	except:
 		message= "Problème de connexion"
 	label.config(text=message)
 	
 def decoller():
-	message = "takeoff".encode()
+	global label
+	message = "takeoff".encode(encoding="utf-8")
 	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 def atterir():
-	message = "land".encode()
+	global label
+	message = "land".encode(encoding="utf-8")
 	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 def droite():
-	message = "right 20".encode()
+	global label
+	message = "right 030".encode(encoding="utf-8")
 	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 def gauche():
-	message = "left 20".encode()
+	global label, client_socket
+	label.config(text="mouvement gauche")
+	message="f'left {nombre}'".encode(encoding="utf-8")
 	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 	
 def avancer():
-	message = "forward 20".encode()
+	global label
+	message = "forward 30".encode(encoding="utf-8")
 	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 
 def reculer():
-	message = "back 20".encode()
+	global label
+	message = "back 30".encode(encoding="utf-8")
 	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 	
 def pivdroite():
-	message = "cw 20".encode()
+	global label
+	message = "cw 30".encode(encoding="utf-8")
 	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 
 def pivgauche():
-	message = "ccw 20".encode()
+	global label
+	message = "ccw x=030".encode()
 	client_socket.sendto(message, ACCES_DRONE)
 	getresp(label)
 
@@ -121,7 +130,7 @@ button_3.place(x=col3, y=ligne2)
 button_4 = Button(window, text="Gauche", command=gauche)
 button_4.place(x=col1, y=ligne2)
 
-button_5 = Button(window, text="Avancer", command=decoller)
+button_5 = Button(window, text="Avancer", command=avancer)
 button_5.place(x=col5, y=ligne1)
 
 button_6 = Button(window, text="Reculer", command=reculer)
